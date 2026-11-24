@@ -77,12 +77,34 @@ if (-not $SkipPackages) {
         }
     }
 
-    Write-Step 'Instalando modulos de PowerShell'
-    if (-not (Get-PSRepository PSGallery -ErrorAction SilentlyContinue)) { Register-PSRepository -Default }
-    foreach ($m in 'Terminal-Icons', 'CompletionPredictor', 'PSReadLine') {
-        if (-not (Get-Module -ListAvailable $m)) {
-            Install-Module $m -Scope CurrentUser -Force -AllowClobber
+    # Los modulos se instalan en CADA version de PowerShell: 5.1 y 7 usan carpetas distintas
+    # (Documents\WindowsPowerShell\Modules vs Documents\PowerShell\Modules). Si solo se instalan
+    # desde 5.1, PowerShell 7 no encuentra CompletionPredictor y se pierden las sugerencias.
+    Write-Step 'Instalando modulos en Windows PowerShell 5.1'
+    $installModules = {
+        param($Names)
+        if ($PSVersionTable.PSEdition -eq 'Desktop') {
+            Install-PackageProvider NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser | Out-Null
         }
+        Set-PSRepository PSGallery -InstallationPolicy Trusted
+        foreach ($m in $Names) {
+            if (-not (Get-Module -ListAvailable $m)) { Install-Module $m -Scope CurrentUser -Force -AllowClobber }
+        }
+    }
+    # 5.1 no soporta CompletionPredictor (requiere PS 7.2+), solo Terminal-Icons
+    & $installModules -Names 'Terminal-Icons'
+
+    Write-Step 'Instalando modulos en PowerShell 7'
+    $pwsh = (Get-Command pwsh -ErrorAction SilentlyContinue).Source
+    if (-not $pwsh) {
+        # recien instalado con winget: el PATH de esta sesion aun no lo incluye
+        $candidate = Join-Path $env:ProgramFiles 'PowerShell\7\pwsh.exe'
+        if (Test-Path $candidate) { $pwsh = $candidate }
+    }
+    if ($pwsh) {
+        & $pwsh -NoProfile -Command "& { $installModules } -Names 'Terminal-Icons','CompletionPredictor'"
+    } else {
+        Write-Warning 'No se encontro pwsh. Reabre la terminal y ejecuta: pwsh -c "Install-Module Terminal-Icons,CompletionPredictor -Scope CurrentUser -Force"'
     }
 
     Write-Step 'Instalando fuente UbuntuMono Nerd Font'

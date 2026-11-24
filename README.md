@@ -46,6 +46,15 @@ Para refrescar la lista de extensiones:
 code --list-extensions | Set-Content vscode\extensions.txt -Encoding utf8
 ```
 
+## No veo las sugerencias de autocompletado
+
+Las sugerencias en lista desplegable (historial + `CompletionPredictor`) **solo funcionan en PowerShell 7** (`pwsh`), no en Windows PowerShell 5.1 (`powershell.exe`, PSReadLine 2.0). Revisa en orden:
+
+1. **Que estés en `pwsh`**: `$PSVersionTable.PSVersion` debe mostrar 7.x. En VS Code elige el perfil de terminal *PowerShell* (no *Windows PowerShell*).
+2. **Que el módulo esté en la carpeta de PowerShell 7**: `Get-Module -ListAvailable CompletionPredictor`. Si no aparece: `Install-Module CompletionPredictor -Scope CurrentUser -Force` **ejecutado desde `pwsh`**.
+3. **Que el perfil esté activo**: `$PROFILE` debe apuntar al archivo del repo, y `(Get-PSReadLineOption).PredictionSource` debe ser `HistoryAndPlugin`.
+4. **El historial no viaja con el repo.** Las sugerencias de "los comandos que más uso" salen de `(Get-PSReadLineOption).HistorySavePath`. En un equipo nuevo está vacío y se llena con el uso. Ese archivo puede contener contraseñas o tokens escritos en comandos, así que **no lo subas al repo**; si lo quieres, cópialo a mano.
+
 ## Qué NO está en este repo (a propósito)
 
 Este repo es público. Por eso `vscode/settings.json` es una versión filtrada y no incluye conexiones a bases de datos, cuentas, tenants, rutas de usuario ni `mcp.json`. Para sincronizar eso entre equipos usa **Settings Sync** de VS Code (cuenta de icono → *Turn on Settings Sync*).
