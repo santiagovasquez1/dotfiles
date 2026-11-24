@@ -1,0 +1,11 @@
+# Respaldos que crea bootstrap.ps1
+*.bak
+*.backup
+
+# Nunca versionar secretos
+.env
+.env.*
+mcp.json
+*.pem
+*.key
+secrets.*
